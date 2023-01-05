@@ -1,0 +1,74 @@
+version: "3.9"
+
+x-environment: &node
+  image: node:13.8.0-alpine
+  working_dir: "/app"
+  volumes:
+    - "./src:/app:cached"
+  tty: true
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/app/Dockerfile
+    volumes:
+      - ./src/:/app
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    ports:
+      - 8080:80
+    depends_on:
+      - app
+    volumes:
+      - ./src/:/app
+
+  db:
+    build:
+      context: .
+      dockerfile: ./docker/mysql/Dockerfile
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: will
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+      TZ: 'Asia/Tokyo'
+    volumes:
+      - mysql-volume:/var/lib/mysql
+  
+  redis:
+    image: redis:latest
+    ports:
+        - "6379:6379"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=db
+      - PMA_USER=user
+      - PMA_PASSWORD=password
+    links:
+      - db
+    ports:
+      - 8082:80
+    volumes:
+       - /sessions
+
+  node:
+    <<: *node
+
+  asset_watcher:
+    <<: *node
+    # For BrowserSync
+    ports:
+      - "3000:3000"
+    command: "npm run watch-poll"
+      
+volumes:
+  mysql-volume:
