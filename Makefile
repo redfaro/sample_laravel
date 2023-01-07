@@ -33,6 +33,10 @@ reinstall:
 	@make destroy
 	@make install
 
+.PHONY: app
+app:
+	docker-compose exec app bash
+
 .PHONY: node
 node:
 	docker-compose exec node sh
